@@ -1,0 +1,66 @@
+
+services:
+
+  n8n_automation:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n_automation
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Europe/Paris
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=changeme_en_prod
+      - AGENT_BASE_URL=http://secops_agent:8000
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - hids_net
+    depends_on:
+      - secops_agent
+
+  secops_agent:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    container_name: secops_agent
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - WATCHED_FILE=/data/sensitive_config.txt
+      - STATE_DIR=/data/state
+      - N8N_ALERT_WEBHOOK=http://n8n_automation:5678/webhook/hids-alert
+      - CRON_HOUR=2
+      - CRON_MINUTE=0
+      - FLASK_PORT=8000
+      - TZ=Europe/Paris
+    volumes:
+      - agent_data:/data
+    networks:
+      - hids_net
+    depends_on:
+      - mailpit
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - hids_net
+
+networks:
+  hids_net:
+    driver: bridge
+
+volumes:
+  n8n_data:
+  agent_data:
