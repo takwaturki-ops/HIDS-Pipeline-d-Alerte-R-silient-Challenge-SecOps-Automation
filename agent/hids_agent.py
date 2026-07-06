@@ -10,6 +10,8 @@ import hashlib
 import threading
 from inotify_simple import INotify, flags
 from flask import Flask, jsonify, request
+import requests
+from datetime import datetime, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # --------------------------------------------------------------------------
@@ -19,6 +21,9 @@ WATCHED_FILE = os.environ.get("WATCHED_FILE", "/data/sensitive_config.txt")
 STATE_DIR = os.environ.get("STATE_DIR", "/data/state")
 CRON_HOUR = int(os.environ.get("CRON_HOUR", 2))
 CRON_MINUTE = int(os.environ.get("CRON_MINUTE", 0))
+N8N_ALERT_WEBHOOK = os.environ.get(
+    "N8N_ALERT_WEBHOOK", "http://n8n_automation:5678/webhook/hids-alert"
+)
 os.makedirs(STATE_DIR, exist_ok=True)
 
 HASH_STATE_FILE = os.path.join(STATE_DIR, "last_known_sha256.txt")
@@ -56,6 +61,20 @@ def read_last_known_hash() -> str:
 def write_last_known_hash(h: str):
     with open(HASH_STATE_FILE, "w") as f:
         f.write(h or "")
+
+def send_alert_to_n8n(event_type: str, details: dict):
+    """Poste une alerte JSON structurée vers le webhook n8n."""
+    payload = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "watched_file": WATCHED_FILE,
+        "event_type": event_type,
+        "details": details,
+    }
+    try:
+        resp = requests.post(N8N_ALERT_WEBHOOK, json=payload, timeout=5)
+        print(f"[ALERTE] Envoyée à n8n [{event_type}] -> HTTP {resp.status_code}")
+    except requests.RequestException as e:
+        print(f"[ERREUR] Echec d'envoi de l'alerte à n8n ({event_type}): {e}")
 def get_file_metadata(path: str) -> dict:
     try:
         st = os.stat(path)
@@ -88,6 +107,9 @@ def perform_full_audit(trigger_source: str = "manuel") -> dict:
         write_last_known_hash(current_hash)
 
     print(f"[AUDIT] source={trigger_source} | integrity_ok={integrity_ok}")
+    send_alert_to_n8n(
+        "AUDIT_ROUTINE" if integrity_ok else "AUDIT_INTEGRITY_MISMATCH", result
+    )
     return result
 
 # --------------------------------------------------------------------------
@@ -150,6 +172,11 @@ def realtime_watch_loop():
 
             if current_hash:
                 write_last_known_hash(current_hash)
+
+            send_alert_to_n8n(event_type, {
+                "sha256_current": current_hash,
+                "content_effectively_changed": content_changed,
+            })
 # --------------------------------------------------------------------------
 # API HTTP (mode "à la demande")
 # --------------------------------------------------------------------------
