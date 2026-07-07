@@ -7,16 +7,16 @@ services:
     restart: unless-stopped
     ports:
       - "5678:5678"
-    environment:
-      - N8N_HOST=localhost
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - WEBHOOK_URL=http://localhost:5678/
-      - GENERIC_TIMEZONE=Europe/Paris
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=changeme_en_prod
-      - AGENT_BASE_URL=http://secops_agent:8000
+   environment:
+  - N8N_HOST=wooing-twisted-singing.ngrok-free.dev
+  - N8N_PORT=5678
+  - N8N_PROTOCOL=https
+  - WEBHOOK_URL=https://wooing-twisted-singing.ngrok-free.dev/
+  - GENERIC_TIMEZONE=Europe/Paris
+  - N8N_BASIC_AUTH_ACTIVE=true
+  - N8N_BASIC_AUTH_USER=admin
+  - N8N_BASIC_AUTH_PASSWORD=changeme_en_prod
+  - AGENT_BASE_URL=http://secops_agent:8000
     volumes:
       - n8n_data:/home/node/.n8n
     networks:
