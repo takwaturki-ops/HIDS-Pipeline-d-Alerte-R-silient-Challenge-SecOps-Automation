@@ -58,6 +58,7 @@ docker compose ps
 ## 🌐 Accès aux services
 
 - n8n : http://localhost:5678
+ https://wooing-twisted-singing.ngrok-free.dev/workflow/nJi08eQX7BIM2pBs
 - secops_agent : http://localhost:8000
 - Mailpit UI : http://localhost:8025
 - Mailpit SMTP : `localhost:1025`
