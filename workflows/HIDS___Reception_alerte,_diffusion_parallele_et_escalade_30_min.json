@@ -1,7 +1,7 @@
 {
   "id": "nJi08eQX7BIM2pBs",
   "name": "HIDS - Reception alerte, diffusion parallele et escalade 30 min",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "parameters": {
@@ -152,7 +152,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const alert = $input.item.json;\nreturn {\n  json: {\n    ...alert,\n    incident_id: $execution.id,\n    ack_webhook_url: `${$env.N8N_WEBHOOK_URL || 'http://n8n_automation:5678'}/webhook/hids-ack/${$execution.id}`\n  }\n};"
+        "jsCode": "const alert = $input.item.json;\nreturn {\n  json: {\n    ...alert,\n    incident_id: $execution.id,\n    ack_webhook_url: `http://n8n_automation:5678/webhook/hids-ack/${$execution.id}`\n  }\n};"
       },
       "id": "32c3694b-1e7c-49c8-a345-56f330e1af7a",
       "name": "Preparer contexte incident",

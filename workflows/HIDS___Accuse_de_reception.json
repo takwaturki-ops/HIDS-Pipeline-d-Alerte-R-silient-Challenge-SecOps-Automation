@@ -1,7 +1,7 @@
 {
   "id": "5e0dd820-ae68-4ba4-af1a-da0d8b800150",
   "name": "HIDS - Accuse de reception",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "parameters": {
