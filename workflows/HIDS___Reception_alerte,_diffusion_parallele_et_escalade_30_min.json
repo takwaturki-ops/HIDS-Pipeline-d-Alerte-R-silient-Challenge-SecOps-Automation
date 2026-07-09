@@ -1,0 +1,566 @@
+{
+  "id": "nJi08eQX7BIM2pBs",
+  "name": "HIDS - Reception alerte, diffusion parallele et escalade 30 min",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "3d078371-c510-42e9-a61c-558728ec6dbd",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        656,
+        -432
+      ],
+      "webhookId": "a6006678-247e-4101-93b5-4034d0a1f360",
+      "credentials": {
+        "telegramApi": {
+          "id": "VkmFqOqIjqQl0fzi",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-run-audit",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/run-audit",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c092ae34-f86d-492b-bb69-3e135176e48b",
+      "name": "Commande = /run-audit ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -432
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://secops_agent:8000/audit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-API-Key",
+              "value": "MaCleSecreteHIDS2026!"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"source\": \"telegram_bot\"\n}",
+        "options": {}
+      },
+      "id": "fcbd9fff-c212-4d03-83dc-42697d951f1c",
+      "name": "Requete HTTP - POST /audit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1104,
+        -512
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Commande non reconnue. Utilisez /run-audit pour declencher un audit.",
+        "additionalFields": {}
+      },
+      "id": "be113b58-6883-45d4-96dd-41e109f615ef",
+      "name": "Reponse - Commande inconnue",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1104,
+        -336
+      ],
+      "webhookId": "e1ef13dd-2323-40ef-b0e1-49adae6e66ba",
+      "credentials": {
+        "telegramApi": {
+          "id": "VkmFqOqIjqQl0fzi",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Audit declenche avec succes. Resultat : {{ JSON.stringify($json) }}",
+        "additionalFields": {}
+      },
+      "id": "3f545bcc-7ace-4e0d-895e-96c6f2fc0c2f",
+      "name": "Reponse - Audit declenche",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1328,
+        -512
+      ],
+      "webhookId": "369acbb1-e24d-445f-97d0-b72d0fba772b",
+      "credentials": {
+        "telegramApi": {
+          "id": "VkmFqOqIjqQl0fzi",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hids-alert",
+        "options": {}
+      },
+      "id": "3a4a93e3-9e47-4571-8c1b-50cb8773fcb7",
+      "name": "Webhook - Alerte HIDS",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        592,
+        144
+      ],
+      "webhookId": "hids-alert-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const alert = $input.item.json;\nreturn {\n  json: {\n    ...alert,\n    incident_id: $execution.id,\n    ack_webhook_url: `${$env.N8N_WEBHOOK_URL || 'http://n8n_automation:5678'}/webhook/hids-ack/${$execution.id}`\n  }\n};"
+      },
+      "id": "32c3694b-1e7c-49c8-a345-56f330e1af7a",
+      "name": "Preparer contexte incident",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "guildId": {
+          "__rl": true,
+          "value": "1524213430356283442",
+          "mode": "list",
+          "cachedResultName": "Lab HIDS Test",
+          "cachedResultUrl": "https://discord.com/channels/1524213430356283442"
+        },
+        "name": "alerte-hids",
+        "options": {}
+      },
+      "id": "13997086-6ed2-4f5e-9d7c-a98fbf0d71ed",
+      "name": "Discord - Diffusion alerte",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        -16
+      ],
+      "webhookId": "141b96d1-bade-492f-8a3c-51f1297d6c11",
+      "credentials": {
+        "discordBotApi": {
+          "id": "rX7q75zL8JIcYxAJ",
+          "name": "Discord Bot account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ADMIN_CHAT_ID }}",
+        "text": "=ALERTE HIDS [{{ $json.event_type }}]\nFichier : {{ $json.watched_file }}\nHash actuel : {{ $json.details.sha256_current }}\nIncident : {{ $json.incident_id }}\n\nCliquez ici pour confirmer la prise en charge :\n{{ $json.ack_webhook_url }}",
+        "additionalFields": {}
+      },
+      "id": "2f1072e2-5ec6-4dfa-88d6-90e859e7306d",
+      "name": "Telegram - Diffusion alerte",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1072,
+        144
+      ],
+      "webhookId": "e0428274-221c-4c1a-b7c6-5ac975dd0995",
+      "credentials": {
+        "telegramApi": {
+          "id": "VkmFqOqIjqQl0fzi",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "hids-alert@secops.local",
+        "toEmail": "={{ $env.SECOPS_TEAM_EMAIL }}",
+        "subject": "=[HIDS] Alerte securite - {{ $json.event_type }}",
+        "emailFormat": "text",
+        "text": "=Un evenement critique a ete detecte par l'agent HIDS.\n\nFichier surveille : {{ $json.watched_file }}\nType d'evenement : {{ $json.event_type }}\nHash SHA-256 actuel : {{ $json.details.sha256_current }}\nHorodatage : {{ $json.timestamp }}\nIdentifiant incident : {{ $json.incident_id }}\n\nConfirmer la prise en charge : {{ $json.ack_webhook_url }}\n\nCeci est une notification automatique du systeme HIDS.",
+        "options": {}
+      },
+      "id": "ecf563a0-1fda-4bc4-8ce1-4ce4028f19f0",
+      "name": "Email - Notification incident",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1072,
+        304
+      ],
+      "webhookId": "cb4d2cdc-f6c8-48ee-9f65-a425b98fdd53",
+      "credentials": {
+        "smtp": {
+          "id": "PKhvXcInuTOAmvko",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "limitWaitTime": true,
+        "resumeAmount": 30,
+        "resumeUnit": "minutes",
+        "options": {}
+      },
+      "id": "445df676-9910-40e8-a5a1-0b529fd59cdf",
+      "name": "Attente de reponse (30 min)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1344,
+        144
+      ],
+      "webhookId": "55cc9e7b-98f6-4999-b0b1-5bf8cbe3d89d"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-ack-received",
+              "leftValue": "={{ $json.body }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a58876b4-4983-4800-995e-d257af5d7265",
+      "name": "Reponse recue ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { status: 'incident_traite', incident_id: $('Preparer contexte incident').item.json.incident_id } };"
+      },
+      "id": "c5bb2bae-2500-45df-9f16-027998fc85f3",
+      "name": "Incident traite",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "guildId": {
+          "__rl": true,
+          "value": "1524213430356283442",
+          "mode": "list",
+          "cachedResultName": "Lab HIDS Test",
+          "cachedResultUrl": "https://discord.com/channels/1524213430356283442"
+        },
+        "name": "alerte-hids",
+        "options": {}
+      },
+      "id": "3d43c90d-26be-442f-8085-a74df1af7f8a",
+      "name": "Discord - Rappel critique",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        224
+      ],
+      "webhookId": "2fff6a47-22f8-4c2a-ae51-88b37268cbdd",
+      "credentials": {
+        "discordBotApi": {
+          "id": "rX7q75zL8JIcYxAJ",
+          "name": "Discord Bot account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ADMIN_CHAT_ID }}",
+        "text": "=RAPPEL CRITIQUE - SEVERITE MAXIMALE\nAucune reponse recue depuis 30 minutes.\nIncident {{ $('Preparer contexte incident').item.json.incident_id }} toujours en souffrance.\n\nConfirmer maintenant : {{ $('Preparer contexte incident').item.json.ack_webhook_url }}",
+        "additionalFields": {}
+      },
+      "id": "cab3f40e-4ae6-4d37-80f6-d6c17b2ef8db",
+      "name": "Telegram - Rappel critique",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1776,
+        352
+      ],
+      "webhookId": "99823346-fd44-4619-ad82-6436f87f1a42",
+      "credentials": {
+        "telegramApi": {
+          "id": "VkmFqOqIjqQl0fzi",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "hids-alert@secops.local",
+        "toEmail": "={{ $env.SECOPS_TEAM_EMAIL }}",
+        "subject": "=[HIDS] RAPPEL CRITIQUE - Incident non pris en charge",
+        "emailFormat": "text",
+        "text": "=Aucune reponse n'a ete recue dans les 30 minutes suivant l'alerte initiale.\n\nIncident : {{ $('Preparer contexte incident').item.json.incident_id }}\nFichier : {{ $('Preparer contexte incident').item.json.watched_file }}\n\nConfirmer la prise en charge : {{ $('Preparer contexte incident').item.json.ack_webhook_url }}\n\nSeverite : MAXIMALE. Intervention immediate requise.",
+        "options": {}
+      },
+      "id": "76eb86b9-6cf0-4dce-843f-611e0ee5bbec",
+      "name": "Email - Rappel critique",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1776,
+        576
+      ],
+      "webhookId": "428d1275-df24-430a-8b0d-5a9e24caad63",
+      "credentials": {
+        "smtp": {
+          "id": "PKhvXcInuTOAmvko",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 768,
+        "width": 1456
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        544,
+        -48
+      ],
+      "id": "347eca4d-19e3-45da-ac54-2d9ca026ee31",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 448,
+        "width": 1184,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        528,
+        -592
+      ],
+      "id": "295db058-ec84-4890-9937-a6dc98266d6e",
+      "name": "Sticky Note1"
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Commande = /run-audit ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commande = /run-audit ?": {
+      "main": [
+        [
+          {
+            "node": "Requete HTTP - POST /audit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reponse - Commande inconnue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Requete HTTP - POST /audit": {
+      "main": [
+        [
+          {
+            "node": "Reponse - Audit declenche",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Alerte HIDS": {
+      "main": [
+        [
+          {
+            "node": "Preparer contexte incident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparer contexte incident": {
+      "main": [
+        [
+          {
+            "node": "Discord - Diffusion alerte",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Telegram - Diffusion alerte",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Notification incident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord - Diffusion alerte": {
+      "main": [
+        [
+          {
+            "node": "Attente de reponse (30 min)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram - Diffusion alerte": {
+      "main": [
+        [
+          {
+            "node": "Attente de reponse (30 min)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email - Notification incident": {
+      "main": [
+        [
+          {
+            "node": "Attente de reponse (30 min)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attente de reponse (30 min)": {
+      "main": [
+        [
+          {
+            "node": "Reponse recue ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reponse recue ?": {
+      "main": [
+        [
+          {
+            "node": "Incident traite",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Discord - Rappel critique",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Telegram - Rappel critique",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Rappel critique",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": {}
+}

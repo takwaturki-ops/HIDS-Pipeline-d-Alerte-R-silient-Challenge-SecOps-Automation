@@ -7,18 +7,22 @@ services:
     restart: unless-stopped
     ports:
       - "5678:5678"
-   environment:
-  - N8N_HOST=wooing-twisted-singing.ngrok-free.dev
-  - N8N_PORT=5678
-  - N8N_PROTOCOL=https
-  - WEBHOOK_URL=https://wooing-twisted-singing.ngrok-free.dev/
-  - GENERIC_TIMEZONE=Europe/Paris
-  - N8N_BASIC_AUTH_ACTIVE=true
-  - N8N_BASIC_AUTH_USER=admin
-  - N8N_BASIC_AUTH_PASSWORD=changeme_en_prod
-  - AGENT_BASE_URL=http://secops_agent:8000
+    environment:
+      - N8N_HOST=wooing-twisted-singing.ngrok-free.dev
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://wooing-twisted-singing.ngrok-free.dev/
+      - N8N_WEBHOOK_URL=https://wooing-twisted-singing.ngrok-free.dev/
+      - GENERIC_TIMEZONE=Europe/Paris
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=changeme_en_prod
+      - AGENT_BASE_URL=http://secops_agent:8000
+      - TELEGRAM_ADMIN_CHAT_ID=8557363403
+      - SECOPS_TEAM_EMAIL=secops@example.com
+      - HIDS_API_KEY=MaCleSecreteHIDS2026!
     volumes:
-      - n8n_data:/home/node/.n8n
+      - hids_project_n8n_data:/home/node/.n8n
     networks:
       - hids_net
     depends_on:
@@ -40,6 +44,7 @@ services:
       - CRON_MINUTE=0
       - FLASK_PORT=8000
       - TZ=Europe/Paris
+      - HIDS_API_KEY=MaCleSecreteHIDS2026!
     volumes:
       - agent_data:/data
     networks:
@@ -62,5 +67,6 @@ networks:
     driver: bridge
 
 volumes:
-  n8n_data:
+  hids_project_n8n_data:
+    external: true
   agent_data:
