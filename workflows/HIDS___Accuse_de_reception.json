@@ -5,7 +5,7 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
+        "httpMethod": "GET",
         "path": "hids-ack",
         "responseMode": "responseNode",
         "options": {}
@@ -22,8 +22,21 @@
     },
     {
       "parameters": {
+        "jsCode": "const executionId = $json.query.executionId;\nreturn {\n  json: {\n    executionId: executionId,\n    waitResumeUrl: `http://n8n_automation:5678/webhook-wait/55cc9e7b-98f6-4999-b0b1-5bf8cbe3d89d/${executionId}`\n  }\n};"
+      },
+      "id": "ack-build-resume-url",
+      "name": "Construire URL de reprise",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
         "chatId": "={{ $env.TELEGRAM_ADMIN_CHAT_ID }}",
-        "text": "=Accuse de reception recu pour l'incident {{ $json.body.incident_id }}.\nL'escalade est annulee.",
+        "text": "=Accuse de reception recu pour l'incident {{ $json.executionId }}.\nReprise du Wait node...",
         "additionalFields": {}
       },
       "id": "ack-telegram-confirm",
@@ -31,7 +44,7 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        700,
+        800,
         300
       ],
       "webhookId": "ack-telegram-webhook",
@@ -44,8 +57,37 @@
     },
     {
       "parameters": {
+        "method": "POST",
+        "url": "={{ $json.waitResumeUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"acked\": true}",
+        "options": {
+          "timeout": 10
+        }
+      },
+      "id": "ack-resume-wait",
+      "name": "HTTP - Resume Wait node",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
         "respondWith": "json",
-        "responseBody": "={\"status\": \"ack_received\", \"incident_id\": \"{{ $json.body.incident_id }}\"}",
+        "responseBody": "={\"status\": \"ack_received\", \"incident_id\": \"{{ $json.executionId }}\"}",
         "options": {}
       },
       "id": "ack-response",
@@ -53,13 +95,24 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        1000,
+        1200,
         300
       ]
     }
   ],
   "connections": {
     "Webhook - ACK HIDS": {
+      "main": [
+        [
+          {
+            "node": "Construire URL de reprise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construire URL de reprise": {
       "main": [
         [
           {
@@ -71,6 +124,17 @@
       ]
     },
     "Telegram - Confirmation ACK": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Resume Wait node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Resume Wait node": {
       "main": [
         [
           {

@@ -23,6 +23,7 @@ services:
       - HIDS_API_KEY=MaCleSecreteHIDS2026!
       # Autorise l'acces aux variables d'environnement dans les expressions n8n ($env.XXX)
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
     volumes:
       - hids_project_n8n_data:/home/node/.n8n
     networks:
