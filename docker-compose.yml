@@ -70,5 +70,4 @@ networks:
 
 volumes:
   hids_project_n8n_data:
-    external: true
   agent_data:

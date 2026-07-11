@@ -67,8 +67,8 @@
         "headerParameters": {
           "parameters": [
             {
-              "name": "changeme-defini-moi-en-env",
-              "value": "="
+              "name": "X-API-Key",
+              "value": "={{ $env.HIDS_API_KEY }}"
             },
             {
               "name": "Content-Type",
